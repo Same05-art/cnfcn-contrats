@@ -4,14 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNFCN – Générateur de Contrats de Formation</title>
+
+    <!-- DNS + connexion anticipée -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Polices : uniquement les graisses utilisées + display=swap (évite FOIT) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap">
+    </noscript>
+
+    <!-- Font Awesome : chargement non bloquant -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
+
     <style>
+        /* Fallback système immédiat → pas d’attente des webfonts */
         :root {
+            --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-doc: 'Times New Roman', Times, Georgia, serif;
+            --font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
             --primary: #1e3a5f;
             --primary-hover: #152a45;
             --accent: #c9a227;
@@ -32,7 +52,7 @@
             --radius: 10px;
             --radius-lg: 16px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-ui); }
         body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
         .app-container { display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background-color: var(--primary); color: #ffffff; display: flex; flex-direction: column; transition: all 0.3s ease; z-index: 100; }
@@ -97,14 +117,14 @@
         }
         input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15); }
         .preview-container { position: sticky; top: 24px; background-color: #525659; border-radius: var(--radius); padding: 20px; max-height: calc(100vh - 120px); overflow-y: auto; box-shadow: var(--shadow-lg); }
-        .document-paper { background-color: white; padding: 36px 40px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.3); color: #111827; font-family: 'Times New Roman', Times, serif; font-size: 12.5px; line-height: 1.55; min-height: 700px; }
+        .document-paper { background-color: white; padding: 36px 40px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.3); color: #111827; font-family: var(--font-doc); font-size: 12.5px; line-height: 1.55; min-height: 700px; }
         .doc-header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
-        .doc-org-name { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #1e3a5f; letter-spacing: 0.5px; }
+        .doc-org-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: #1e3a5f; letter-spacing: 0.5px; }
         .doc-slogan { font-style: italic; font-size: 12px; color: #c9a227; margin-top: 2px; }
-        .doc-title { font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; text-align: center; margin: 14px 0 6px; text-transform: uppercase; color: #1e3a5f; }
+        .doc-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; text-align: center; margin: 14px 0 6px; text-transform: uppercase; color: #1e3a5f; }
         .doc-subtitle { text-align: center; font-size: 11px; color: #475569; margin-bottom: 14px; }
         .doc-formation { text-align: center; font-weight: 700; font-size: 13px; margin-bottom: 16px; color: #1e3a5f; }
-        .doc-section-title { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 14px; margin-bottom: 5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; color: #1e3a5f; }
+        .doc-section-title { font-family: var(--font-display); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 14px; margin-bottom: 5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; color: #1e3a5f; }
         .doc-signatures { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; page-break-inside: avoid; }
         .signature-box { border: 1px dashed #cbd5e1; padding: 12px; min-height: 110px; border-radius: var(--radius-sm); background-color: #fafafa; }
         .signature-img { max-height: 56px; max-width: 180px; display: block; margin-top: 6px; object-fit: contain; }
@@ -365,6 +385,7 @@
                                         <p style="font-size:11px;">Madame VERBAERE NIKITA, Fondatrice</p>
                                         <p style="font-size:11px; font-style:italic; color:#475569;">« Lu et approuvé »</p>
                                         <img id="docSigOrgImg" class="signature-img" style="display:none;">
+                                        <div id="docSigOrgDefault" class="default-org-sig" style="font-family:'Segoe Script','Brush Script MT',cursive; font-size:26px; color:#1e3a5f; margin-top:8px; line-height:1.2;">Nikita Verbaere</div>
                                     </div>
                                     <div class="signature-box">
                                         <p><strong>Pour l’élève :</strong></p>
@@ -374,10 +395,7 @@
                                     </div>
                                 </div>
 
-                                <div class="cgv-note">
-                                    <strong>Annexes jointes au présent contrat :</strong> Brochure de l'école, Livret d'accueil, Programme de formation, <strong>Conditions Générales de Vente (CGV)</strong> – jointes ci-après et disponibles sur la plateforme Teachizy. Les CGV font partie intégrante du présent contrat.
                                 </div>
-                            </div>
 
                             <!-- CGV visibles dans l'aperçu -->
                             <div class="document-paper" id="cgvPaper" style="display:none; margin-top:0;">
@@ -514,12 +532,24 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- Après signature : imprimer / télécharger -->
+                        <div class="form-card" id="signingDoneBox" style="display:none;">
+                            <h3 class="form-section-title"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Contrat signé</h3>
+                            <p style="font-size:14px; margin-bottom:16px;">Vous pouvez imprimer ou télécharger votre contrat signé (avec les CGV).</p>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <button class="btn btn-primary" onclick="printSignedContract()"><i class="fa-solid fa-print"></i> Imprimer</button>
+                                <button class="btn btn-secondary" onclick="downloadSignedPDF()"><i class="fa-solid fa-file-pdf"></i> Télécharger le PDF</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
         </main>
     </div>
 
+    <!-- Libs en bas de page : le HTML s’affiche d’abord, puis les scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ==================== CONFIG ====================
         const STORAGE_KEY_CONTRACTS = "cnfcn_nikita_contracts";
@@ -528,7 +558,7 @@
 
         // SUPABASE – URL déjà configurée. Remplacez uniquement la clé anon.
         const SUPABASE_URL = "https://auevmjixfltwotngrsxp.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1ZXZtaml4Zmx0d290bmdyc3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNTIzODgsImV4cCI6MjEwNTkyODM4OH0.nftyiHdnBYFPmSOhvrgmSC3DpbJEgQ9uXrwHd29BIvk"; // ← collez ici votre clé anon (Settings → API → anon public)
+        const SUPABASE_ANON_KEY = "VOTRE_ANON_KEY"; // ← collez ici votre clé anon (Settings → API → anon public)
         const APP_BASE_URL = window.location.origin + window.location.pathname;
 
         let supabaseClient = null;
@@ -820,7 +850,7 @@
             if (orgPad) orgPad.clear();
         }
 
-        function saveOrgSignature() {
+        async function saveOrgSignature() {
             if (!orgPad) return;
             if (orgPad.isEmpty()) {
                 alert("Veuillez d’abord dessiner la signature.");
@@ -828,19 +858,42 @@
             }
             const data = orgPad.toDataURL();
             localStorage.setItem(STORAGE_KEY_ORG_SIG, data);
-            document.getElementById('orgSigStatus').innerText = "✓ Signature enregistrée (HD)";
+            // Sauvegarde aussi en ligne pour être disponible partout
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('company_profile').upsert({
+                        id: 1,
+                        org_signature: data,
+                        updated_at: new Date().toISOString()
+                    });
+                } catch (e) { console.warn("Sauvegarde signature cloud:", e); }
+            }
+            document.getElementById('orgSigStatus').innerText = "✓ Signature enregistrée (par défaut)";
             document.getElementById('orgSigPreview').style.display = 'block';
             document.getElementById('orgSigPreviewImg').src = data;
             applyOrgSignatureToPreview();
-            alert("Signature de Madame VERBAERE enregistrée en haute qualité.\nElle sera automatiquement apposée sur tous les nouveaux contrats.");
+            alert("Signature de Madame VERBAERE enregistrée.\nElle sera apposée automatiquement sur tous les contrats.");
         }
 
-        function loadOrgSignature() {
-            const data = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+        async function loadOrgSignature() {
+            let data = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+            // Si pas en local, tenter Supabase
+            if (!data && supabaseClient) {
+                try {
+                    const { data: row } = await supabaseClient.from('company_profile').select('org_signature').eq('id', 1).maybeSingle();
+                    if (row && row.org_signature) {
+                        data = row.org_signature;
+                        localStorage.setItem(STORAGE_KEY_ORG_SIG, data);
+                    }
+                } catch (e) { console.warn(e); }
+            }
             if (data) {
-                document.getElementById('orgSigStatus').innerText = "✓ Signature déjà enregistrée (HD)";
-                document.getElementById('orgSigPreview').style.display = 'block';
-                document.getElementById('orgSigPreviewImg').src = data;
+                const statusEl = document.getElementById('orgSigStatus');
+                if (statusEl) statusEl.innerText = "✓ Signature active par défaut";
+                const prev = document.getElementById('orgSigPreview');
+                const prevImg = document.getElementById('orgSigPreviewImg');
+                if (prev) prev.style.display = 'block';
+                if (prevImg) prevImg.src = data;
                 applyOrgSignatureToPreview();
             }
         }
@@ -848,9 +901,14 @@
         function applyOrgSignatureToPreview() {
             const data = localStorage.getItem(STORAGE_KEY_ORG_SIG);
             const img = document.getElementById('docSigOrgImg');
+            const def = document.getElementById('docSigOrgDefault');
             if (data && img) {
                 img.src = data;
                 img.style.display = 'block';
+                if (def) def.style.display = 'none';
+            } else if (def) {
+                def.style.display = 'block';
+                if (img) img.style.display = 'none';
             }
         }
 
@@ -1247,11 +1305,35 @@
                 <strong>Stagiaire :</strong> ${contract.stagiaire}<br>
                 <strong>Statut :</strong> <span class="badge ${contract.status === 'Signé' ? 'badge-signed' : 'badge-pending'}">${contract.status}</span>
             `;
-            document.getElementById('signingContractPaper').innerHTML = contract.htmlContent || '<p>Contenu non disponible.</p>';
+            const paperEl = document.getElementById('signingContractPaper');
+            paperEl.innerHTML = contract.htmlContent || '<p>Contenu non disponible.</p>';
+
+            // S'assurer que la signature organisme est visible (dessinée ou défaut)
+            const orgData = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+            const orgImg = paperEl.querySelector('#docSigOrgImg');
+            const orgDef = paperEl.querySelector('#docSigOrgDefault');
+            if (orgData && orgImg) {
+                orgImg.src = orgData;
+                orgImg.style.display = 'block';
+                if (orgDef) orgDef.style.display = 'none';
+            } else if (orgDef) {
+                orgDef.style.display = 'block';
+            } else if (!orgImg || orgImg.style.display === 'none') {
+                // Injecter signature par défaut si absente du HTML
+                const boxes = paperEl.querySelectorAll('.signature-box');
+                if (boxes[0] && !boxes[0].querySelector('.default-org-sig')) {
+                    const d = document.createElement('div');
+                    d.className = 'default-org-sig';
+                    d.style.cssText = "font-family:'Segoe Script','Brush Script MT',cursive;font-size:26px;color:#1e3a5f;margin-top:8px;";
+                    d.innerText = 'Nikita Verbaere';
+                    boxes[0].appendChild(d);
+                }
+            }
 
             if (contract.status === 'Signé') {
                 showSigningStatus("✅ Ce contrat a déjà été signé.", "success");
                 document.getElementById('signingActionBox').style.display = 'none';
+                document.getElementById('signingDoneBox').style.display = 'block';
             }
         }
 
@@ -1349,6 +1431,60 @@
 
             showSigningStatus("✅ Contrat signé avec succès le " + signedAt + " ! Merci.", "success");
             document.getElementById('signingActionBox').style.display = 'none';
+            document.getElementById('signingDoneBox').style.display = 'block';
+        }
+
+        function printSignedContract() {
+            const paper = document.getElementById('signingContractPaper');
+            const cgv = document.getElementById('signingCgvPaper');
+            // Afficher temporairement les CGV pour l'impression
+            if (cgv && !cgv.dataset.loaded) {
+                cgv.innerHTML = getFullCGVHtml().replace('page-break-before: always;', '');
+                cgv.dataset.loaded = '1';
+            }
+            const w = window.open('', '_blank');
+            w.document.write(`<!DOCTYPE html><html><head><title>Contrat signé</title>
+                <style>
+                    body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #111; margin: 20px; }
+                    img { max-height: 56px; max-width: 180px; }
+                    .doc-header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
+                    .doc-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 14px; margin-bottom: 5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; color: #1e3a5f; }
+                    .doc-signatures { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                    .signature-box { border: 1px dashed #cbd5e1; padding: 12px; min-height: 80px; }
+                    @media print { body { margin: 0; } }
+                </style></head><body>`);
+            w.document.write(paper ? paper.innerHTML : '');
+            if (cgv) w.document.write('<div style="page-break-before:always;"></div>' + cgv.innerHTML);
+            w.document.write('</body></html>');
+            w.document.close();
+            setTimeout(() => { w.focus(); w.print(); }, 400);
+        }
+
+        function downloadSignedPDF() {
+            const paper = document.getElementById('signingContractPaper');
+            if (!paper) return;
+            const wrapper = document.createElement('div');
+            const contractDiv = document.createElement('div');
+            contractDiv.innerHTML = paper.innerHTML;
+            contractDiv.style.padding = '20px 30px';
+            contractDiv.style.fontFamily = "'Times New Roman', Times, serif";
+            contractDiv.style.fontSize = '12px';
+            wrapper.appendChild(contractDiv);
+            const cgvDiv = document.createElement('div');
+            cgvDiv.innerHTML = getFullCGVHtml();
+            wrapper.appendChild(cgvDiv);
+            const name = (currentSigningContract && currentSigningContract.stagiaire)
+                ? currentSigningContract.stagiaire.replace(/\s+/g, '_')
+                : 'contrat';
+            const num = (currentSigningContract && currentSigningContract.number) || 'signe';
+            html2pdf().set({
+                margin: 8,
+                filename: `${num}_${name}_signe.pdf`,
+                image: { type: 'jpeg', quality: 0.97 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            }).from(wrapper).save();
         }
     </script>
 </body>
