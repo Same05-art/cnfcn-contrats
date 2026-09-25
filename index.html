@@ -155,10 +155,81 @@
             .content-area { padding: 16px; }
         }
         .cgv-note { background: #f0f9ff; border: 1px solid #bae6fd; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-top: 16px; color: #0369a1; }
+
+        /* ===== Écran de connexion (admin uniquement) ===== */
+        #loginScreen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 50%, #152a45 100%);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        #loginScreen.hidden { display: none !important; }
+        .login-card {
+            background: #fff; border-radius: 16px; padding: 36px 32px;
+            width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+        }
+        .login-logo { text-align: center; margin-bottom: 24px; }
+        .login-logo img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: #000; }
+        .login-logo h1 { font-size: 18px; font-weight: 800; color: #1e3a5f; margin-top: 12px; }
+        .login-logo p { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .login-error {
+            display: none; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;
+            padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px;
+        }
+        .login-error.visible { display: block; }
+        .app-container.locked { display: none !important; }
+        .nav-item.logout-item { margin-top: auto; color: #fca5a5; }
+        .nav-item.logout-item:hover { background: rgba(239,68,68,0.15); color: #fecaca; }
     </style>
 </head>
 <body>
-    <div class="app-container">
+    <!-- ÉCRAN DE CONNEXION – réservé à Nikita -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="logo-cnfcn.png" alt="CNFCN" onerror="this.style.display='none'">
+                <h1>CNFCN Nikita®</h1>
+                <p>Accès réservé à l’administratrice</p>
+            </div>
+            <div id="loginError" class="login-error"></div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required placeholder="votre@email.com" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%; margin-top:8px;">
+                    <i class="fa-solid fa-lock"></i> Se connecter
+                </button>
+            </form>
+            <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:20px;">
+                Centre National de Formation Canine Nikita®<br>
+                Accès confidentiel — usage strictement professionnel
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal après envoi : lien à copier -->
+    <div id="linkModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:8px; color:var(--primary);">
+                <i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Contrat envoyé
+            </h3>
+            <p id="linkModalInfo" style="font-size:14px; color:var(--text-muted); margin-bottom:16px;"></p>
+            <label style="font-size:12px; font-weight:600;">Lien de signature (à copier si besoin)</label>
+            <div style="display:flex; gap:8px; margin-top:6px; margin-bottom:16px;">
+                <input type="text" id="linkModalUrl" readonly style="flex:1; font-size:12px; padding:10px;">
+                <button type="button" class="btn btn-primary" onclick="copySigningLink()"><i class="fa-solid fa-copy"></i> Copier</button>
+            </div>
+            <p id="linkModalEmailStatus" style="font-size:13px; margin-bottom:16px;"></p>
+            <button type="button" class="btn btn-secondary" style="width:100%;" onclick="closeLinkModal()">Fermer</button>
+        </div>
+    </div>
+
+    <div class="app-container locked" id="appRoot">
         <aside class="sidebar">
             <div class="brand-header">
                 <div class="brand-logo-text">
@@ -181,8 +252,8 @@
                 <a class="nav-item" onclick="switchView('companyView')">
                     <i class="fa-solid fa-building"></i><span>Organisme</span>
                 </a>
-                <a class="nav-item" onclick="switchView('settingsView')">
-                    <i class="fa-solid fa-gear"></i><span>Paramètres</span>
+                <a class="nav-item logout-item" onclick="handleLogout()">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Déconnexion</span>
                 </a>
             </nav>
             <div class="sidebar-footer">Centre National de Formation Canine Nikita®</div>
@@ -482,22 +553,6 @@
                     </div>
                 </section>
 
-                <!-- SETTINGS -->
-                <section id="settingsView" class="view-section">
-                    <div class="form-card" style="max-width:600px; margin:0 auto;">
-                        <h3 class="form-section-title"><i class="fa-solid fa-database"></i> Sauvegarde &amp; Exportation</h3>
-                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Exporter ou restaurer vos données de contrats au format JSON.</p>
-                        <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                            <button class="btn btn-secondary" onclick="exportDataJSON()"><i class="fa-solid fa-download"></i> Exporter</button>
-                            <button class="btn btn-secondary" onclick="document.getElementById('importJsonInput').click()"><i class="fa-solid fa-upload"></i> Importer</button>
-                            <input type="file" id="importJsonInput" accept=".json" style="display:none;" onchange="importDataJSON(event)">
-                        </div>
-                        <div class="legal-notice" style="margin-top:24px;">
-                            <strong>Configuration Supabase :</strong> Pour activer l’envoi d’emails et le stockage en ligne, renseignez votre URL et clé anon Supabase dans le code (section SUPABASE CONFIG).
-                        </div>
-                    </div>
-                </section>
-
                 <!-- SIGNING VIEW -->
                 <section id="signingView" class="view-section">
                     <div style="max-width:900px; margin:0 auto;">
@@ -560,6 +615,9 @@
         const SUPABASE_URL = "https://auevmjixfltwotngrsxp.supabase.co";
         const SUPABASE_ANON_KEY = "VOTRE_ANON_KEY"; // ← collez ici votre clé anon (Settings → API → anon public)
         const APP_BASE_URL = window.location.origin + window.location.pathname;
+        // Seul cet email peut se connecter à l’admin
+        const ALLOWED_ADMIN_EMAIL = "info.formationcanine@gmail.com";
+        const ADMIN_NOTIFY_EMAIL = "info.formationcanine@gmail.com"; // reçoit la confimation après signature
 
         let supabaseClient = null;
         try {
@@ -577,21 +635,116 @@
         let currentSigningContract = null;
         // signingPad is declared with the SignaturePad helpers above
 
-        // ==================== INIT ====================
-        window.addEventListener("DOMContentLoaded", () => {
+        // ==================== AUTH (accès réservé à Nikita) ====================
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errEl = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+            errEl.classList.remove('visible');
+            errEl.innerText = '';
+
+            if (!supabaseClient) {
+                errEl.innerText = "Supabase non configuré. Vérifiez la clé anon dans le code.";
+                errEl.classList.add('visible');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connexion...';
+
+            try {
+                // Liste blanche : seul cet email est autorisé
+                if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                    throw new Error("Accès refusé. Cet email n’est pas autorisé.");
+                }
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                const userEmail = (data.user && data.user.email) ? data.user.email.toLowerCase() : '';
+                if (userEmail !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                    await supabaseClient.auth.signOut();
+                    throw new Error("Accès refusé. Compte non autorisé.");
+                }
+                showApp();
+            } catch (err) {
+                const msg = err.message || "";
+                if (msg.includes('Invalid login credentials')) {
+                    errEl.innerText = "Email ou mot de passe incorrect.";
+                } else if (msg.includes('Accès refusé')) {
+                    errEl.innerText = msg;
+                } else {
+                    errEl.innerText = msg || "Erreur de connexion.";
+                }
+                errEl.classList.add('visible');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> Se connecter';
+            }
+        }
+
+        async function handleLogout() {
+            if (supabaseClient) {
+                try { await supabaseClient.auth.signOut(); } catch (e) {}
+            }
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appRoot').classList.add('locked');
+            document.getElementById('loginPassword').value = '';
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appRoot').classList.remove('locked');
+            loadCompanyProfile();
+            loadOrgSignature();
+            initOrgSigCanvas();
+            setDefaultDates();
+            renderDashboard();
+            updatePreview();
+        }
+
+        async function checkAuthAndInit() {
             const urlParams = new URLSearchParams(window.location.search);
             const signToken = urlParams.get('sign');
+
+            // Lien de signature stagiaire → accès public (pas de login)
             if (signToken) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appRoot').classList.remove('locked');
                 initSigningCanvas();
                 loadContractForSigning(signToken);
-            } else {
-                loadCompanyProfile();
-                loadOrgSignature();
-                initOrgSigCanvas();
-                setDefaultDates();
-                renderDashboard();
-                updatePreview();
+                return;
             }
+
+            // Zone admin → session obligatoire
+            if (!supabaseClient) {
+                // Sans Supabase, on bloque quand même l’accès (sécurité minimale)
+                document.getElementById('loginError').innerText =
+                    "Configuration Supabase manquante. Impossible d’ouvrir la plateforme.";
+                document.getElementById('loginError').classList.add('visible');
+                return;
+            }
+
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && session.user) {
+                    const email = (session.user.email || '').toLowerCase();
+                    if (email === ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                        showApp();
+                    } else {
+                        // Session d’un autre compte → on déconnecte
+                        await supabaseClient.auth.signOut();
+                    }
+                }
+                // sinon : écran login déjà visible
+            } catch (e) {
+                console.warn("Auth check:", e);
+            }
+        }
+
+        // ==================== INIT ====================
+        window.addEventListener("DOMContentLoaded", () => {
+            checkAuthAndInit();
         });
 
         function setDefaultDates() {
@@ -643,7 +796,7 @@
                 'generatorView': 'Nouveau contrat de formation',
                 'contractsView': 'Mes Contrats',
                 'companyView': 'Organisme',
-                'settingsView': 'Paramètres'
+                'signingView': 'Signature'
             };
             document.getElementById('pageTitle').innerText = titles[viewId] || 'CNFCN Nikita';
             if (viewId === 'contractsView') renderAllContracts();
@@ -979,14 +1132,10 @@
             }
 
             const signingLink = `${APP_BASE_URL}?sign=${signingToken}`;
-            let msg = `Contrat ${contractNum} généré avec succès !\n\n`;
-            msg += `Stagiaire : ${fullName}\nEmail : ${email}\n\n`;
-            msg += `🔗 Lien de signature :\n${signingLink}\n\n`;
-            msg += onlineOk ? "✅ Enregistré en ligne (Supabase)." : "💾 Enregistré localement.\n(Configurez Supabase pour le cloud + emails)";
 
-            // Tentative d’envoi email via Edge Function Resend (si Supabase configuré)
+            // Envoi email au stagiaire
             let emailOk = false;
-            if (supabaseClient && onlineOk) {
+            if (supabaseClient) {
                 try {
                     const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
                         method: 'POST',
@@ -996,38 +1145,46 @@
                             subject: `Signature requise – Contrat de formation ${contractNum}`,
                             signingLink: signingLink,
                             stagiaireName: fullName,
-                            contractNumber: contractNum,
-                            html: `
-                                <h2>Contrat de formation professionnelle</h2>
-                                <p>Bonjour ${prenom},</p>
-                                <p>Vous avez reçu un contrat de formation de la part du <strong>Centre National de Formation Canine Nikita®</strong>.</p>
-                                <p>Cliquez sur le bouton ci-dessous pour lire et signer le contrat :</p>
-                                <p style="margin:24px 0;">
-                                    <a href="${signingLink}" style="background:#c9a227;color:#1e3a5f;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
-                                        Signer le contrat
-                                    </a>
-                                </p>
-                                <p style="color:#64748b;font-size:13px;">Ou copiez ce lien :<br>${signingLink}</p>
-                                <p style="color:#64748b;font-size:12px;">Les Conditions Générales de Vente sont jointes au contrat.</p>
-                            `
+                            contractNumber: contractNum
                         })
                     });
-                    if (res.ok) {
-                        emailOk = true;
-                        msg += "\n📧 Email de signature envoyé au stagiaire.";
-                    } else {
-                        const errBody = await res.text();
-                        console.warn("Email function:", errBody);
-                        msg += "\n⚠️ Email non envoyé (voir console) – copiez le lien ci-dessus.";
-                    }
+                    emailOk = res.ok;
+                    if (!res.ok) console.warn("Email function:", await res.text());
                 } catch (e) {
                     console.warn(e);
-                    msg += "\n⚠️ Email non envoyé automatiquement – copiez le lien ci-dessus.";
                 }
             }
 
-            alert(msg);
+            // Modal : infos + lien à copier
+            document.getElementById('linkModalInfo').innerHTML =
+                `<strong>${fullName}</strong> — ${email}<br>Contrat n° <strong>${contractNum}</strong>`;
+            document.getElementById('linkModalUrl').value = signingLink;
+            document.getElementById('linkModalEmailStatus').innerHTML = emailOk
+                ? '<span style="color:#065f46;">📧 Email envoyé au stagiaire avec le lien de signature.</span>'
+                : '<span style="color:#92400e;">⚠️ Email non envoyé automatiquement. Copiez le lien et envoyez-le manuellement.</span>';
+            document.getElementById('linkModal').classList.add('active');
             switchView('contractsView');
+        }
+
+        function copySigningLink() {
+            const input = document.getElementById('linkModalUrl');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = event.target.closest('button');
+                if (btn) {
+                    const old = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
+                    setTimeout(() => { btn.innerHTML = old; }, 2000);
+                }
+            }).catch(() => {
+                document.execCommand('copy');
+                alert('Lien copié.');
+            });
+        }
+
+        function closeLinkModal() {
+            document.getElementById('linkModal').classList.remove('active');
         }
 
         // ==================== DASHBOARD & LIST ====================
@@ -1428,6 +1585,40 @@
             const paper = document.getElementById('signingContractPaper');
             const sigImg = paper.querySelector('#docSigStagImg');
             if (sigImg) { sigImg.src = signatureData; sigImg.style.display = 'block'; }
+
+            // Email de confirmation à Madame Nikita
+            if (supabaseClient) {
+                try {
+                    const stagName = currentSigningContract.stagiaire || 'Stagiaire';
+                    const num = currentSigningContract.number || '';
+                    await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+                        body: JSON.stringify({
+                            to: ADMIN_NOTIFY_EMAIL,
+                            subject: `Contrat signé – ${stagName} (${num})`,
+                            html: `
+                                <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">
+                                    <div style="background:#1e3a5f;color:#fff;padding:20px;text-align:center;">
+                                        <strong>CNFCN Nikita® – Confirmation de signature</strong>
+                                    </div>
+                                    <div style="padding:24px;border:1px solid #e2e8f0;">
+                                        <p>Bonjour,</p>
+                                        <p>Le contrat de formation a été <strong>signé</strong> par le stagiaire.</p>
+                                        <p>
+                                            <strong>Stagiaire :</strong> ${stagName}<br>
+                                            <strong>N° contrat :</strong> ${num}<br>
+                                            <strong>Date de signature :</strong> ${signedAt}
+                                        </p>
+                                        <p style="font-size:13px;color:#64748b;">Vous pouvez retrouver ce contrat dans votre tableau de bord.</p>
+                                    </div>
+                                </div>
+                            `,
+                            text: `Contrat ${num} signé par ${stagName} le ${signedAt}.`
+                        })
+                    });
+                } catch (e) { console.warn("Email notif admin:", e); }
+            }
 
             showSigningStatus("✅ Contrat signé avec succès le " + signedAt + " ! Merci.", "success");
             document.getElementById('signingActionBox').style.display = 'none';
