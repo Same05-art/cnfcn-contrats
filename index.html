@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNFCN – Générateur de Contrats de Formation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --primary-hover: #152a45;
+            --accent: #c9a227;
+            --accent-hover: #b08d1f;
+            --accent-light: #fdf8e8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 16px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--primary); color: #ffffff; display: flex; flex-direction: column; transition: all 0.3s ease; z-index: 100; }
+        .brand-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .brand-logo-text { font-size: 15px; font-weight: 800; letter-spacing: 0.3px; color: #ffffff; display: flex; align-items: center; gap: 10px; line-height: 1.3; }
+        .brand-logo-text i { color: var(--accent); font-size: 20px; }
+        .brand-logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #000; flex-shrink: 0; }
+        .doc-logo { display: block; margin: 0 auto 10px; width: 88px; height: 88px; object-fit: contain; }
+        .brand-subtitle { font-size: 11px; color: #94a3b8; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .nav-menu { padding: 20px 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #94a3b8; text-decoration: none; border-radius: var(--radius-sm); font-weight: 500; font-size: 14px; transition: all 0.2s; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { color: #ffffff; background-color: rgba(255,255,255,0.1); }
+        .nav-item.active { background-color: var(--accent); color: #1e3a5f; }
+        .nav-item i { font-size: 16px; width: 20px; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #64748b; text-align: center; }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
+        .top-navbar { height: 64px; background-color: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+        .top-navbar-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .top-actions { display: flex; align-items: center; gap: 16px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; text-decoration: none; }
+        .btn-primary { background-color: var(--accent); color: #1e3a5f; }
+        .btn-primary:hover { background-color: var(--accent-hover); color: white; }
+        .btn-secondary { background-color: white; border-color: var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background-color: #f1f5f9; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-danger { background-color: #fef2f2; color: var(--danger); border-color: #fecaca; }
+        .btn-danger:hover { background-color: var(--danger); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .content-area { padding: 32px; flex: 1; }
+        .view-section { display: none; animation: fadeIn 0.3s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-icon.blue { background-color: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background-color: #d1fae5; color: var(--success); }
+        .stat-icon.yellow { background-color: #fef3c7; color: var(--warning); }
+        .stat-icon.purple { background-color: #f3e8ff; color: #9333ea; }
+        .stat-info h4 { font-size: 24px; font-weight: 700; }
+        .stat-info p { font-size: 13px; color: var(--text-muted); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .table-card { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .data-table th { background-color: #f8fafc; padding: 14px 20px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 16px 20px; border-bottom: 1px solid var(--border); color: var(--text-main); }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background-color: #f8fafc; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-signed { background-color: #d1fae5; color: #065f46; }
+        .badge-pending { background-color: #fef3c7; color: #92400e; }
+        .generator-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        .form-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
+        .form-section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; outline: none; transition: border-color 0.2s; background-color: white;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15); }
+        .preview-container { position: sticky; top: 24px; background-color: #525659; border-radius: var(--radius); padding: 20px; max-height: calc(100vh - 120px); overflow-y: auto; box-shadow: var(--shadow-lg); }
+        .document-paper { background-color: white; padding: 36px 40px; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.3); color: #111827; font-family: 'Times New Roman', Times, serif; font-size: 12.5px; line-height: 1.55; min-height: 700px; }
+        .doc-header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
+        .doc-org-name { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #1e3a5f; letter-spacing: 0.5px; }
+        .doc-slogan { font-style: italic; font-size: 12px; color: #c9a227; margin-top: 2px; }
+        .doc-title { font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; text-align: center; margin: 14px 0 6px; text-transform: uppercase; color: #1e3a5f; }
+        .doc-subtitle { text-align: center; font-size: 11px; color: #475569; margin-bottom: 14px; }
+        .doc-formation { text-align: center; font-weight: 700; font-size: 13px; margin-bottom: 16px; color: #1e3a5f; }
+        .doc-section-title { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 14px; margin-bottom: 5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; color: #1e3a5f; }
+        .doc-signatures { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; page-break-inside: avoid; }
+        .signature-box { border: 1px dashed #cbd5e1; padding: 12px; min-height: 110px; border-radius: var(--radius-sm); background-color: #fafafa; }
+        .signature-img { max-height: 56px; max-width: 180px; display: block; margin-top: 6px; object-fit: contain; }
+        .sig-pad-wrap { position: relative; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.04); }
+        .sig-pad-wrap canvas { display: block; width: 100%; cursor: crosshair; touch-action: none; }
+        .sig-pad-hint { position: absolute; bottom: 6px; right: 10px; font-size: 10px; color: #94a3b8; pointer-events: none; user-select: none; }
+        .sig-pad-line { position: absolute; left: 10%; right: 10%; bottom: 32%; height: 1px; background: #e2e8f0; pointer-events: none; }
+        .legal-notice { font-size: 11px; color: var(--text-muted); background-color: #fffbe0; border: 1px solid #fef3c7; padding: 10px 14px; border-radius: var(--radius-sm); margin-top: 20px; }
+        .mobile-view-toggle { display: none; margin-bottom: 16px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background-color: white; border-radius: var(--radius); width: 100%; max-width: 500px; padding: 24px; box-shadow: var(--shadow-lg); }
+        .canvas-container { border: 1px solid var(--border); border-radius: var(--radius-sm); background-color: #fafafa; margin: 12px 0; }
+        @media (max-width: 1024px) {
+            .generator-layout { grid-template-columns: 1fr; }
+            .preview-container { position: static; max-height: none; }
+            .mobile-view-toggle { display: flex; gap: 10px; }
+            .sidebar { width: 70px; }
+            .brand-subtitle, .sidebar-footer, .nav-item span { display: none; }
+            .brand-logo-text { justify-content: center; }
+            .brand-logo-text span { display: none; }
+            .brand-logo-img { width: 36px; height: 36px; }
+            .nav-item { justify-content: center; padding: 12px; }
+        }
+        @media (max-width: 640px) {
+            .form-row { grid-template-columns: 1fr; }
+            .top-navbar { padding: 0 16px; }
+            .content-area { padding: 16px; }
+        }
+        .cgv-note { background: #f0f9ff; border: 1px solid #bae6fd; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-top: 16px; color: #0369a1; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-logo-text">
+                    <img src="logo-cnfcn.png" alt="Logo CNFCN" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <i class="fa-solid fa-dog" style="display:none;"></i>
+                    <span>CNFCN Nikita®</span>
+                </div>
+                <div class="brand-subtitle">Contrats de Formation</div>
+            </div>
+            <nav class="nav-menu">
+                <a class="nav-item active" onclick="switchView('dashboardView')">
+                    <i class="fa-solid fa-chart-pie"></i><span>Tableau de bord</span>
+                </a>
+                <a class="nav-item" onclick="startNewContract()">
+                    <i class="fa-solid fa-plus-circle"></i><span>Nouveau contrat</span>
+                </a>
+                <a class="nav-item" onclick="switchView('contractsView')">
+                    <i class="fa-solid fa-folder-open"></i><span>Mes contrats</span>
+                </a>
+                <a class="nav-item" onclick="switchView('companyView')">
+                    <i class="fa-solid fa-building"></i><span>Organisme</span>
+                </a>
+                <a class="nav-item" onclick="switchView('settingsView')">
+                    <i class="fa-solid fa-gear"></i><span>Paramètres</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">Centre National de Formation Canine Nikita®</div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-navbar">
+                <h1 class="top-navbar-title" id="pageTitle">Tableau de bord</h1>
+                <div class="top-actions">
+                    <button class="btn btn-primary" onclick="startNewContract()">
+                        <i class="fa-solid fa-plus"></i> Nouveau Contrat
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- DASHBOARD -->
+                <section id="dashboardView" class="view-section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue"><i class="fa-solid fa-file-signature"></i></div>
+                            <div class="stat-info"><h4 id="statTotal">0</h4><p>Total Contrats</p></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green"><i class="fa-solid fa-calendar-day"></i></div>
+                            <div class="stat-info"><h4 id="statToday">0</h4><p>Générés aujourd'hui</p></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon yellow"><i class="fa-solid fa-clock"></i></div>
+                            <div class="stat-info"><h4 id="statPending">0</h4><p>En attente signature</p></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fa-solid fa-check-double"></i></div>
+                            <div class="stat-info"><h4 id="statSigned">0</h4><p>Contrats signés</p></div>
+                        </div>
+                    </div>
+                    <div class="section-header">
+                        <h2 class="section-title">Contrats récents</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="switchView('contractsView')">Voir tout</button>
+                    </div>
+                    <div class="table-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>N° Contrat</th>
+                                    <th>Stagiaire</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentContractsTable"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- GENERATOR -->
+                <section id="generatorView" class="view-section">
+                    <div class="mobile-view-toggle">
+                        <button class="btn btn-secondary" style="flex:1" onclick="toggleMobileView('form')">Formulaire</button>
+                        <button class="btn btn-secondary" style="flex:1" onclick="toggleMobileView('preview')">Aperçu</button>
+                    </div>
+                    <div class="generator-layout">
+                        <div class="form-card" id="formSide">
+                            <form id="contractForm" onsubmit="event.preventDefault();">
+                                <h3 class="form-section-title"><i class="fa-solid fa-user-graduate"></i> Informations du Stagiaire</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Nom *</label>
+                                        <input type="text" id="stagNom" required oninput="updatePreview()" placeholder="Nom de famille">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Prénom *</label>
+                                        <input type="text" id="stagPrenom" required oninput="updatePreview()" placeholder="Prénom">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Email du stagiaire * <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(recevra le lien de signature)</span></label>
+                                    <input type="email" id="stagEmail" required placeholder="stagiaire@email.com" oninput="updatePreview()">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Date d'inscription *</label>
+                                        <input type="date" id="dateInscription" required oninput="updatePreview()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date d'entrée en formation *</label>
+                                        <input type="date" id="dateEntree" required oninput="updatePreview()">
+                                    </div>
+                                </div>
+
+                                <h3 class="form-section-title" style="margin-top:24px;"><i class="fa-solid fa-euro-sign"></i> Article 7 – Conditions financières</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Nombre de règlements *</label>
+                                        <select id="nbReglements" onchange="updatePreview()">
+                                            <option value="1">1 fois (paiement comptant)</option>
+                                            <option value="4">4 fois</option>
+                                            <option value="10">10 fois</option>
+                                            <option value="12" selected>12 fois</option>
+                                            <option value="20">20 fois</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date de début des paiements *</label>
+                                        <input type="date" id="dateDebutPaiements" required oninput="updatePreview()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Montant total TTC (€)</label>
+                                    <input type="text" id="montantTotal" value="1990" oninput="updatePreview()">
+                                </div>
+
+                                <h3 class="form-section-title" style="margin-top:24px;"><i class="fa-solid fa-calendar"></i> Finalisation</h3>
+                                <div class="form-group">
+                                    <label>Date figurant à la fin (« À Paris, le… ») *</label>
+                                    <input type="date" id="dateParis" required oninput="updatePreview()">
+                                </div>
+
+                                <div class="legal-notice">
+                                    <strong>CGV :</strong> Les Conditions Générales de Vente du Centre National de Formation Canine Nikita® seront automatiquement jointes au contrat.
+                                </div>
+
+                                <div style="display:flex; justify-content:flex-end; margin-top:24px; padding-top:16px; border-top:1px solid var(--border); gap:12px;">
+                                    <button type="button" class="btn btn-secondary" onclick="switchView('dashboardView')">Annuler</button>
+                                    <button type="button" class="btn btn-success" id="btnGenerate" onclick="generateAndSaveContract()">
+                                        <i class="fa-solid fa-paper-plane"></i> Générer & Envoyer à la signature
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="preview-container" id="previewSide">
+                            <!-- Onglets Contrat / CGV -->
+                            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                                <button type="button" class="btn btn-sm" id="tabContrat" onclick="showPreviewTab('contrat')" style="background:var(--accent);color:#1e3a5f;border:none;">Contrat</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tabCgv" onclick="showPreviewTab('cgv')">CGV (jointes)</button>
+                            </div>
+
+                            <div class="document-paper" id="contractPaper">
+                                <div class="doc-header">
+                                    <img src="logo-cnfcn.png" alt="Logo Centre National de Formation Canine Nikita" class="doc-logo" onerror="this.style.display='none'">
+                                    <div class="doc-org-name">CENTRE NATIONAL DE FORMATION CANINE NIKITA®</div>
+                                    <div class="doc-slogan">Faites de votre passion votre métier !</div>
+                                </div>
+                                <div class="doc-title">CONTRAT DE FORMATION PROFESSIONNELLE</div>
+                                <div class="doc-subtitle">(Articles L.6353-3 et suivants du Code du travail)</div>
+                                <div class="doc-formation" id="docFormationName">Formation Éducateur Canin Comportementaliste &amp; Formation Secourisme Canin Incluse</div>
+
+                                <p style="margin-bottom:10px;"><strong>Entre les soussignés :</strong></p>
+                                <p style="margin-bottom:8px;">
+                                    <strong>Le Centre National de Formation Canine Nikita®</strong>, marque déposée à l’INPI, déclaration d'activité enregistrée sous le numéro 11757563275 auprès du préfet de région d'Île-de-France et sous le numéro de SIRET <strong>83871049900032</strong> – 66 Avenue des Champs-Élysées, 75008 Paris.
+                                </p>
+                                <p style="margin-bottom:12px;">
+                                    Ci-après désigné le stagiaire :<br>
+                                    <strong>Nom et prénom du Stagiaire :</strong> <span id="docStagName">[Nom et prénom]</span><br>
+                                    <strong>Date d’inscription :</strong> <span id="docDateInscription">[--]</span><br>
+                                    <strong>Date d’entrée en formation :</strong> <span id="docDateEntree">[--]</span>
+                                </p>
+
+                                <div class="doc-section-title">Article 1 : Objet</div>
+                                <p>Ce contrat vise l’organisation de l’action de formation professionnelle intitulée « Formation Éducateur Canin Comportementaliste &amp; Formation Secourisme Canin Incluse ».</p>
+
+                                <div class="doc-section-title">Article 2 : Nature et Caractéristique de l’Action de Formation</div>
+                                <p>Cette formation s'inscrit dans le cadre de la formation professionnelle continue, prévue par l’article L.6313-1 du Code du travail. Son objectif est de former au métier d’éducateur canin comportementaliste et de secourisme canin. À l'issue, trois certificats seront délivrés, sous condition de réussite :</p>
+                                <ul style="padding-left:18px; margin:6px 0;">
+                                    <li>Certificat d'Éducateur Canin</li>
+                                    <li>Certificat de Comportementaliste Canin</li>
+                                    <li>Certificat de Secourisme Canin</li>
+                                </ul>
+                                <p>La formation est d'une durée totale de 400 heures. Elle se compose de cours théoriques et de cours pratiques en ligne sur la plateforme Teachizy, accessible via un espace élève personnel.</p>
+
+                                <div class="doc-section-title">Article 3 : Niveau de Connaissance Préalable</div>
+                                <p>Aucun prérequis n'est nécessaire pour suivre cette formation.</p>
+
+                                <div class="doc-section-title">Article 4 : Organisation de l’Action de Formation</div>
+                                <p>La formation débutera à la date précitée, avec un suivi assuré par Madame VERBAERE Nikita sur la plateforme Teachizy. Les modalités incluent :</p>
+                                <ul style="padding-left:18px; margin:6px 0;">
+                                    <li>Étude de la théorie canine avec un examen final en ligne, nécessitant au moins 50% de bonnes réponses.</li>
+                                    <li>Étude de la pratique canine, également évaluée par un examen final en ligne avec un seuil de réussite identique.</li>
+                                </ul>
+
+                                <div class="doc-section-title">Article 5 : Nature de la Sanction</div>
+                                <p>Une note inférieure à 50% aux examens théorique ou pratique est éliminatoire.</p>
+
+                                <div class="doc-section-title">Article 6 : Délai de Rétractation</div>
+                                <p>Les conditions de rétractation sont spécifiées dans les CGV jointes à ce contrat et disponibles sur la plateforme Teachizy et le site www.formationscanines.com.</p>
+
+                                <div class="doc-section-title">Article 7 : Conditions Financières</div>
+                                <p id="docArt7">Le coût total de la formation est fixé à <strong>1990 euros TTC</strong>. Financement en <strong>12 fois</strong> sans frais à partir du <strong>--</strong>. Les modalités de financement et les conditions en cas d'abandon ou de cessation anticipée de la formation sont détaillées dans les CGV.</p>
+
+                                <div class="doc-section-title">Article 8 : Règlement des Différends</div>
+                                <p>En cas de litige non résolu à l'amiable, le tribunal de Paris sera compétent pour trancher.</p>
+
+                                <p style="margin-top:16px;" id="docDoneAt">Fait en double exemplaire, à Paris, le <span id="docDateParis">--</span></p>
+
+                                <div class="doc-signatures">
+                                    <div class="signature-box">
+                                        <p><strong>Pour le Centre National de Formation Canine Nikita® :</strong></p>
+                                        <p style="font-size:11px;">Madame VERBAERE NIKITA, Fondatrice</p>
+                                        <p style="font-size:11px; font-style:italic; color:#475569;">« Lu et approuvé »</p>
+                                        <img id="docSigOrgImg" class="signature-img" style="display:none;">
+                                    </div>
+                                    <div class="signature-box">
+                                        <p><strong>Pour l’élève :</strong></p>
+                                        <p style="font-size:11px;" id="docSigStagName">[Nom du stagiaire]</p>
+                                        <p style="font-size:11px; font-style:italic; color:#475569;">(précédée de la mention « Lu et approuvé » / « Bon pour accord »)</p>
+                                        <img id="docSigStagImg" class="signature-img" style="display:none;">
+                                    </div>
+                                </div>
+
+                                <div class="cgv-note">
+                                    <strong>Annexes jointes au présent contrat :</strong> Brochure de l'école, Livret d'accueil, Programme de formation, <strong>Conditions Générales de Vente (CGV)</strong> – jointes ci-après et disponibles sur la plateforme Teachizy. Les CGV font partie intégrante du présent contrat.
+                                </div>
+                            </div>
+
+                            <!-- CGV visibles dans l'aperçu -->
+                            <div class="document-paper" id="cgvPaper" style="display:none; margin-top:0;">
+                                <!-- Rempli dynamiquement par JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CONTRACTS LIST -->
+                <section id="contractsView" class="view-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Liste de tous les contrats</h2>
+                        <input type="text" id="searchContractInput" placeholder="Rechercher par nom ou N°..." style="width:250px;" oninput="filterContracts()">
+                    </div>
+                    <div class="table-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>N° Contrat</th>
+                                    <th>Stagiaire</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allContractsTable"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- COMPANY -->
+                <section id="companyView" class="view-section">
+                    <div class="form-card" style="max-width:700px; margin:0 auto;">
+                        <h3 class="form-section-title"><i class="fa-solid fa-building"></i> Profil Organisme</h3>
+                        <form onsubmit="saveCompanyProfile(event)">
+                            <div class="form-group">
+                                <label>Raison sociale</label>
+                                <input type="text" id="savedOrgName" value="Centre National de Formation Canine Nikita®" readonly>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>SIRET</label>
+                                    <input type="text" id="savedSiret" value="83871049900032" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>N° déclaration d'activité</label>
+                                    <input type="text" id="savedDecla" value="11757563275" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Adresse</label>
+                                <input type="text" id="savedAddress" value="66 Avenue des Champs-Élysées, 75008 Paris" readonly>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Email expéditeur (reçoit les contrats signés)</label>
+                                    <input type="email" id="savedOrgEmail" placeholder="info.formationcanine@gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Téléphone</label>
+                                    <input type="tel" id="savedOrgPhone" value="07 54 48 01 02">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Enregistrer</button>
+                        </form>
+
+                        <h3 class="form-section-title" style="margin-top:32px;"><i class="fa-solid fa-pen-nib"></i> Signature de Madame VERBAERE (pré-enregistrée)</h3>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Dessinez une fois la signature de l’organisme. Elle sera automatiquement apposée sur tous les contrats (haute qualité).</p>
+                        <div class="sig-pad-wrap" style="margin-bottom:12px; height:150px;">
+                            <canvas id="orgSigCanvas"></canvas>
+                            <div class="sig-pad-line"></div>
+                            <div class="sig-pad-hint">Signez ici</div>
+                        </div>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearOrgSigCanvas()"><i class="fa-solid fa-eraser"></i> Effacer</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="saveOrgSignature()"><i class="fa-solid fa-save"></i> Enregistrer la signature</button>
+                            <span id="orgSigStatus" style="font-size:13px; color:var(--success);"></span>
+                        </div>
+                        <div id="orgSigPreview" style="margin-top:16px; display:none;">
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">Aperçu de la signature enregistrée :</p>
+                            <img id="orgSigPreviewImg" style="max-height:60px; border:1px solid #e2e8f0; border-radius:4px; background:#fff; padding:4px;">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SETTINGS -->
+                <section id="settingsView" class="view-section">
+                    <div class="form-card" style="max-width:600px; margin:0 auto;">
+                        <h3 class="form-section-title"><i class="fa-solid fa-database"></i> Sauvegarde &amp; Exportation</h3>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Exporter ou restaurer vos données de contrats au format JSON.</p>
+                        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                            <button class="btn btn-secondary" onclick="exportDataJSON()"><i class="fa-solid fa-download"></i> Exporter</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('importJsonInput').click()"><i class="fa-solid fa-upload"></i> Importer</button>
+                            <input type="file" id="importJsonInput" accept=".json" style="display:none;" onchange="importDataJSON(event)">
+                        </div>
+                        <div class="legal-notice" style="margin-top:24px;">
+                            <strong>Configuration Supabase :</strong> Pour activer l’envoi d’emails et le stockage en ligne, renseignez votre URL et clé anon Supabase dans le code (section SUPABASE CONFIG).
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SIGNING VIEW -->
+                <section id="signingView" class="view-section">
+                    <div style="max-width:900px; margin:0 auto;">
+                        <div class="form-card" style="margin-bottom:24px;">
+                            <h3 class="form-section-title"><i class="fa-solid fa-file-signature"></i> Signature du contrat de formation</h3>
+                            <p style="font-size:14px; color:var(--text-muted); margin-bottom:16px;">
+                                Vous avez reçu une demande de signature. Veuillez lire le contrat ci-dessous puis apposer votre signature.
+                            </p>
+                            <div id="signingContractInfo" style="background:#f8fafc; padding:16px; border-radius:8px; margin-bottom:16px; font-size:14px;"></div>
+                            <div id="signingStatus" style="display:none; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600;"></div>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
+                            <button type="button" class="btn btn-sm" id="signTabContrat" onclick="showSignTab('contrat')" style="background:var(--accent);color:#1e3a5f;border:none;">Contrat</button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="signTabCgv" onclick="showSignTab('cgv')">CGV (jointes)</button>
+                        </div>
+                        <div class="preview-container" style="position:static; max-height:none; margin-bottom:24px;">
+                            <div class="document-paper" id="signingContractPaper"></div>
+                            <div class="document-paper" id="signingCgvPaper" style="display:none;"></div>
+                        </div>
+                        <div class="form-card" id="signingActionBox">
+                            <h3 class="form-section-title"><i class="fa-solid fa-pen-nib"></i> Votre signature</h3>
+                            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Dessinez votre signature ci-dessous puis validez. La mention « Lu et approuvé / Bon pour accord » sera ajoutée automatiquement.</p>
+                            <div class="sig-pad-wrap" style="margin-bottom:16px; height:160px;">
+                                <canvas id="signingCanvas"></canvas>
+                                <div class="sig-pad-line"></div>
+                                <div class="sig-pad-hint">Signez ici</div>
+                            </div>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="clearSigningCanvas()"><i class="fa-solid fa-eraser"></i> Effacer</button>
+                                <button class="btn btn-success" id="btnConfirmSign" onclick="confirmRecipientSignature()">
+                                    <i class="fa-solid fa-check"></i> Signer et valider le contrat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==================== CONFIG ====================
+        const STORAGE_KEY_CONTRACTS = "cnfcn_nikita_contracts";
+        const STORAGE_KEY_COMPANY = "cnfcn_nikita_company";
+        const STORAGE_KEY_ORG_SIG = "cnfcn_nikita_org_signature";
+
+        // SUPABASE – URL déjà configurée. Remplacez uniquement la clé anon.
+        const SUPABASE_URL = "https://auevmjixfltwotngrsxp.supabase.co";
+        const SUPABASE_ANON_KEY = "VOTRE_ANON_KEY"; // ← collez ici votre clé anon (Settings → API → anon public)
+        const APP_BASE_URL = window.location.origin + window.location.pathname;
+
+        let supabaseClient = null;
+        try {
+            if (typeof supabase !== "undefined" && SUPABASE_URL.includes("supabase.co") && !SUPABASE_URL.includes("VOTRE_")) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("✅ Supabase initialisé");
+            }
+        } catch (e) { console.warn("Supabase non configuré:", e.message); }
+
+        function generateSigningToken() {
+            return 'sig_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10);
+        }
+
+        // ==================== STATE ====================
+        let currentSigningContract = null;
+        // signingPad is declared with the SignaturePad helpers above
+
+        // ==================== INIT ====================
+        window.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const signToken = urlParams.get('sign');
+            if (signToken) {
+                initSigningCanvas();
+                loadContractForSigning(signToken);
+            } else {
+                loadCompanyProfile();
+                loadOrgSignature();
+                initOrgSigCanvas();
+                setDefaultDates();
+                renderDashboard();
+                updatePreview();
+            }
+        });
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().slice(0, 10);
+            document.getElementById('dateInscription').value = today;
+            document.getElementById('dateEntree').value = today;
+            document.getElementById('dateDebutPaiements').value = today;
+            document.getElementById('dateParis').value = today;
+        }
+
+        function showPreviewTab(tab) {
+            const contrat = document.getElementById('contractPaper');
+            const cgv = document.getElementById('cgvPaper');
+            const btnC = document.getElementById('tabContrat');
+            const btnG = document.getElementById('tabCgv');
+            if (tab === 'cgv') {
+                contrat.style.display = 'none';
+                cgv.style.display = 'block';
+                // Charger le contenu CGV si pas encore fait
+                if (!cgv.dataset.loaded) {
+                    cgv.innerHTML = getFullCGVHtml().replace('page-break-before: always;', '');
+                    cgv.dataset.loaded = '1';
+                }
+                btnC.className = 'btn btn-sm btn-secondary';
+                btnG.className = 'btn btn-sm';
+                btnG.style.background = 'var(--accent)';
+                btnG.style.color = '#1e3a5f';
+                btnG.style.border = 'none';
+            } else {
+                contrat.style.display = 'block';
+                cgv.style.display = 'none';
+                btnG.className = 'btn btn-sm btn-secondary';
+                btnC.className = 'btn btn-sm';
+                btnC.style.background = 'var(--accent)';
+                btnC.style.color = '#1e3a5f';
+                btnC.style.border = 'none';
+            }
+        }
+
+        // ==================== NAVIGATION ====================
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            const activeNav = Array.from(document.querySelectorAll('.nav-item')).find(a => a.getAttribute('onclick') && a.getAttribute('onclick').includes(viewId));
+            if (activeNav) activeNav.classList.add('active');
+            const titles = {
+                'dashboardView': 'Tableau de bord',
+                'generatorView': 'Nouveau contrat de formation',
+                'contractsView': 'Mes Contrats',
+                'companyView': 'Organisme',
+                'settingsView': 'Paramètres'
+            };
+            document.getElementById('pageTitle').innerText = titles[viewId] || 'CNFCN Nikita';
+            if (viewId === 'contractsView') renderAllContracts();
+            if (viewId === 'dashboardView') renderDashboard();
+        }
+
+        function startNewContract() {
+            switchView('generatorView');
+            document.getElementById('contractForm').reset();
+            setDefaultDates();
+            document.getElementById('montantTotal').value = "1990";
+            document.getElementById('nbReglements').value = "12";
+            updatePreview();
+        }
+
+        function toggleMobileView(mode) {
+            if (mode === 'form') {
+                document.getElementById('formSide').style.display = 'block';
+                document.getElementById('previewSide').style.display = 'none';
+            } else {
+                document.getElementById('formSide').style.display = 'none';
+                document.getElementById('previewSide').style.display = 'block';
+            }
+        }
+
+        // ==================== PREVIEW ====================
+        function formatDateFr(dateStr) {
+            if (!dateStr) return "--";
+            const d = new Date(dateStr + "T00:00:00");
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function updatePreview() {
+            const nom = document.getElementById('stagNom').value.trim();
+            const prenom = document.getElementById('stagPrenom').value.trim();
+            const fullName = (prenom + " " + nom).trim() || "[Nom et prénom]";
+            document.getElementById('docStagName').innerText = fullName;
+            document.getElementById('docSigStagName').innerText = fullName;
+
+            document.getElementById('docDateInscription').innerText = formatDateFr(document.getElementById('dateInscription').value);
+            document.getElementById('docDateEntree').innerText = formatDateFr(document.getElementById('dateEntree').value);
+            document.getElementById('docDateParis').innerText = formatDateFr(document.getElementById('dateParis').value);
+
+            const nb = document.getElementById('nbReglements').value;
+            const montant = document.getElementById('montantTotal').value || "1990";
+            const datePaiement = formatDateFr(document.getElementById('dateDebutPaiements').value);
+
+            // Texte conforme au modèle fourni
+            let art7Text = `Le coût total de la formation est fixé à <strong>${montant} euros TTC</strong>. `;
+            if (nb === "1") {
+                art7Text += `Paiement en une seule fois sans frais.`;
+            } else {
+                art7Text += `Financement en <strong>${nb} fois</strong> sans frais à partir du <strong>${datePaiement}</strong>.`;
+            }
+            art7Text += ` Les modalités de financement et les conditions en cas d'abandon ou de cessation anticipée de la formation sont détaillées dans les CGV.`;
+            document.getElementById('docArt7').innerHTML = art7Text;
+
+            applyOrgSignatureToPreview();
+        }
+
+        // ==================== STORAGE ====================
+        function getSavedContracts() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY_CONTRACTS) || "[]");
+        }
+
+        function saveCompanyProfile(e) {
+            e.preventDefault();
+            const profile = {
+                email: document.getElementById('savedOrgEmail').value,
+                phone: document.getElementById('savedOrgPhone').value
+            };
+            localStorage.setItem(STORAGE_KEY_COMPANY, JSON.stringify(profile));
+            alert("Profil enregistré.");
+        }
+
+        function loadCompanyProfile() {
+            const data = localStorage.getItem(STORAGE_KEY_COMPANY);
+            if (data) {
+                const p = JSON.parse(data);
+                if (p.email) document.getElementById('savedOrgEmail').value = p.email;
+                if (p.phone) document.getElementById('savedOrgPhone').value = p.phone;
+            }
+        }
+
+        // ==================== HIGH-QUALITY SIGNATURE PAD ====================
+        /**
+         * SignaturePad optimisé :
+         * - Rendu haute résolution (devicePixelRatio)
+         * - Traits fluides (quadratic curves)
+         * - Export PNG transparent haute qualité
+         * - Support souris + tactile
+         */
+        function createSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+            const ctx = canvas.getContext('2d');
+            let drawing = false;
+            let lastX = 0, lastY = 0;
+            let hasInk = false;
+
+            function resize() {
+                const parent = canvas.parentElement;
+                const cssW = parent.clientWidth || 450;
+                const cssH = parent.clientHeight || 150;
+                const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+                canvas.style.width = cssW + 'px';
+                canvas.style.height = cssH + 'px';
+                canvas.width = Math.floor(cssW * dpr);
+                canvas.height = Math.floor(cssH * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2.2;
+            }
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const src = e.touches ? e.touches[0] : e;
+                return {
+                    x: src.clientX - rect.left,
+                    y: src.clientY - rect.top
+                };
+            }
+
+            function start(e) {
+                drawing = true;
+                const p = getPos(e);
+                lastX = p.x; lastY = p.y;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                e.preventDefault();
+            }
+
+            function move(e) {
+                if (!drawing) return;
+                const p = getPos(e);
+                // Courbe quadratique pour un trait plus fluide
+                const midX = (lastX + p.x) / 2;
+                const midY = (lastY + p.y) / 2;
+                ctx.quadraticCurveTo(lastX, lastY, midX, midY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(midX, midY);
+                lastX = p.x; lastY = p.y;
+                hasInk = true;
+                e.preventDefault();
+            }
+
+            function stop(e) {
+                if (drawing) {
+                    ctx.stroke();
+                    drawing = false;
+                }
+                if (e) e.preventDefault();
+            }
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            canvas.addEventListener('mouseup', stop);
+            canvas.addEventListener('mouseleave', stop);
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            canvas.addEventListener('touchend', stop);
+            canvas.addEventListener('touchcancel', stop);
+
+            resize();
+            window.addEventListener('resize', () => {
+                // Ne pas effacer au resize si déjà signé – on ignore pour simplicité
+            });
+
+            return {
+                canvas,
+                ctx,
+                clear() {
+                    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2.2;
+                    hasInk = false;
+                },
+                isEmpty() { return !hasInk; },
+                toDataURL() {
+                    // Export haute qualité, fond transparent
+                    return canvas.toDataURL('image/png');
+                },
+                resize
+            };
+        }
+
+        let orgPad = null;
+        let signingPad = null;
+
+        function initOrgSigCanvas() {
+            orgPad = createSignaturePad('orgSigCanvas');
+        }
+
+        function clearOrgSigCanvas() {
+            if (orgPad) orgPad.clear();
+        }
+
+        function saveOrgSignature() {
+            if (!orgPad) return;
+            if (orgPad.isEmpty()) {
+                alert("Veuillez d’abord dessiner la signature.");
+                return;
+            }
+            const data = orgPad.toDataURL();
+            localStorage.setItem(STORAGE_KEY_ORG_SIG, data);
+            document.getElementById('orgSigStatus').innerText = "✓ Signature enregistrée (HD)";
+            document.getElementById('orgSigPreview').style.display = 'block';
+            document.getElementById('orgSigPreviewImg').src = data;
+            applyOrgSignatureToPreview();
+            alert("Signature de Madame VERBAERE enregistrée en haute qualité.\nElle sera automatiquement apposée sur tous les nouveaux contrats.");
+        }
+
+        function loadOrgSignature() {
+            const data = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+            if (data) {
+                document.getElementById('orgSigStatus').innerText = "✓ Signature déjà enregistrée (HD)";
+                document.getElementById('orgSigPreview').style.display = 'block';
+                document.getElementById('orgSigPreviewImg').src = data;
+                applyOrgSignatureToPreview();
+            }
+        }
+
+        function applyOrgSignatureToPreview() {
+            const data = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+            const img = document.getElementById('docSigOrgImg');
+            if (data && img) {
+                img.src = data;
+                img.style.display = 'block';
+            }
+        }
+
+        // ==================== GENERATE & SEND ====================
+        async function generateAndSaveContract() {
+            const nom = document.getElementById('stagNom').value.trim();
+            const prenom = document.getElementById('stagPrenom').value.trim();
+            const email = document.getElementById('stagEmail').value.trim();
+            if (!nom || !prenom || !email) {
+                alert("Veuillez renseigner le nom, prénom et email du stagiaire.");
+                return;
+            }
+            if (!document.getElementById('dateInscription').value || !document.getElementById('dateEntree').value || !document.getElementById('dateDebutPaiements').value || !document.getElementById('dateParis').value) {
+                alert("Veuillez renseigner toutes les dates.");
+                return;
+            }
+
+            const contracts = getSavedContracts();
+            const year = new Date().getFullYear();
+            const contractNum = `CNFCN-${year}-${String(contracts.length + 1).padStart(4, '0')}`;
+            const signingToken = generateSigningToken();
+            const fullName = prenom + " " + nom;
+
+            // S'assurer que la signature org est dans le HTML sauvegardé
+            applyOrgSignatureToPreview();
+            const paperHtml = document.getElementById('contractPaper').innerHTML;
+
+            const newContract = {
+                id: Date.now(),
+                number: contractNum,
+                date: new Date().toLocaleDateString('fr-FR'),
+                stagiaire: fullName,
+                email: email,
+                status: "En attente",
+                signingToken: signingToken,
+                htmlContent: paperHtml,
+                createdAt: new Date().toISOString(),
+                data: {
+                    nom, prenom, email,
+                    dateInscription: document.getElementById('dateInscription').value,
+                    dateEntree: document.getElementById('dateEntree').value,
+                    nbReglements: document.getElementById('nbReglements').value,
+                    dateDebutPaiements: document.getElementById('dateDebutPaiements').value,
+                    dateParis: document.getElementById('dateParis').value,
+                    montant: document.getElementById('montantTotal').value
+                }
+            };
+
+            contracts.unshift(newContract);
+            localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(contracts));
+
+            // Supabase (si configuré)
+            let onlineOk = false;
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('contracts').insert([{
+                        number: contractNum,
+                        stagiaire: fullName,
+                        email: email,
+                        status: "En attente",
+                        signing_token: signingToken,
+                        html_content: newContract.htmlContent,
+                        data: newContract.data
+                    }]);
+                    if (!error) onlineOk = true;
+                    else console.warn("Supabase insert:", error.message);
+                } catch (err) { console.warn("Supabase:", err.message); }
+            }
+
+            const signingLink = `${APP_BASE_URL}?sign=${signingToken}`;
+            let msg = `Contrat ${contractNum} généré avec succès !\n\n`;
+            msg += `Stagiaire : ${fullName}\nEmail : ${email}\n\n`;
+            msg += `🔗 Lien de signature :\n${signingLink}\n\n`;
+            msg += onlineOk ? "✅ Enregistré en ligne (Supabase)." : "💾 Enregistré localement.\n(Configurez Supabase pour le cloud + emails)";
+
+            // Tentative d’envoi email via Edge Function Resend (si Supabase configuré)
+            let emailOk = false;
+            if (supabaseClient && onlineOk) {
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+                        body: JSON.stringify({
+                            to: email,
+                            subject: `Signature requise – Contrat de formation ${contractNum}`,
+                            signingLink: signingLink,
+                            stagiaireName: fullName,
+                            contractNumber: contractNum,
+                            html: `
+                                <h2>Contrat de formation professionnelle</h2>
+                                <p>Bonjour ${prenom},</p>
+                                <p>Vous avez reçu un contrat de formation de la part du <strong>Centre National de Formation Canine Nikita®</strong>.</p>
+                                <p>Cliquez sur le bouton ci-dessous pour lire et signer le contrat :</p>
+                                <p style="margin:24px 0;">
+                                    <a href="${signingLink}" style="background:#c9a227;color:#1e3a5f;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
+                                        Signer le contrat
+                                    </a>
+                                </p>
+                                <p style="color:#64748b;font-size:13px;">Ou copiez ce lien :<br>${signingLink}</p>
+                                <p style="color:#64748b;font-size:12px;">Les Conditions Générales de Vente sont jointes au contrat.</p>
+                            `
+                        })
+                    });
+                    if (res.ok) {
+                        emailOk = true;
+                        msg += "\n📧 Email de signature envoyé au stagiaire.";
+                    } else {
+                        const errBody = await res.text();
+                        console.warn("Email function:", errBody);
+                        msg += "\n⚠️ Email non envoyé (voir console) – copiez le lien ci-dessus.";
+                    }
+                } catch (e) {
+                    console.warn(e);
+                    msg += "\n⚠️ Email non envoyé automatiquement – copiez le lien ci-dessus.";
+                }
+            }
+
+            alert(msg);
+            switchView('contractsView');
+        }
+
+        // ==================== DASHBOARD & LIST ====================
+        function renderDashboard() {
+            const contracts = getSavedContracts();
+            const todayStr = new Date().toLocaleDateString('fr-FR');
+            document.getElementById('statTotal').innerText = contracts.length;
+            document.getElementById('statToday').innerText = contracts.filter(c => c.date === todayStr).length;
+            document.getElementById('statPending').innerText = contracts.filter(c => c.status === "En attente").length;
+            document.getElementById('statSigned').innerText = contracts.filter(c => c.status === "Signé").length;
+
+            const tbody = document.getElementById('recentContractsTable');
+            tbody.innerHTML = "";
+            contracts.slice(0, 5).forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${c.number}</strong></td>
+                    <td>${c.stagiaire}</td>
+                    <td>${c.date}</td>
+                    <td><span class="badge ${c.status === 'Signé' ? 'badge-signed' : 'badge-pending'}">${c.status}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="downloadPDFById(${c.id})"><i class="fa-solid fa-download"></i> PDF</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderAllContracts() {
+            const contracts = getSavedContracts();
+            const tbody = document.getElementById('allContractsTable');
+            tbody.innerHTML = "";
+            contracts.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${c.number}</strong></td>
+                    <td>${c.stagiaire}</td>
+                    <td>${c.date}</td>
+                    <td><span class="badge ${c.status === 'Signé' ? 'badge-signed' : 'badge-pending'}">${c.status}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="downloadPDFById(${c.id})"><i class="fa-solid fa-download"></i> PDF</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteContract(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterContracts() {
+            const q = document.getElementById('searchContractInput').value.toLowerCase();
+            const contracts = getSavedContracts().filter(c =>
+                c.stagiaire.toLowerCase().includes(q) || c.number.toLowerCase().includes(q)
+            );
+            const tbody = document.getElementById('allContractsTable');
+            tbody.innerHTML = "";
+            contracts.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${c.number}</strong></td>
+                    <td>${c.stagiaire}</td>
+                    <td>${c.date}</td>
+                    <td><span class="badge ${c.status === 'Signé' ? 'badge-signed' : 'badge-pending'}">${c.status}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="downloadPDFById(${c.id})"><i class="fa-solid fa-download"></i> PDF</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteContract(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteContract(id) {
+            if (!confirm("Supprimer ce contrat ?")) return;
+            let contracts = getSavedContracts().filter(c => c.id !== id);
+            localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(contracts));
+            renderAllContracts();
+            renderDashboard();
+        }
+
+        function getFullCGVHtml() {
+            return `
+            <div style="page-break-before: always; font-family: 'Times New Roman', Times, serif; font-size: 11px; line-height: 1.45; color: #111; padding: 20px;">
+                <div style="text-align:center; margin-bottom:16px; border-bottom:2px solid #1e3a5f; padding-bottom:10px;">
+                    <img src="logo-cnfcn.png" alt="Logo" style="width:70px;height:70px;object-fit:contain;margin:0 auto 8px;display:block;" onerror="this.style.display='none'">
+                    <div style="font-family:Cinzel,serif; font-size:15px; font-weight:700; color:#1e3a5f;">CENTRE NATIONAL DE FORMATION CANINE NIKITA®</div>
+                    <div style="font-style:italic; color:#c9a227; font-size:11px;">Faites de votre passion votre métier !</div>
+                    <div style="font-size:14px; font-weight:700; color:#c9a227; margin-top:8px;">LES CONDITIONS GÉNÉRALES DE VENTE</div>
+                    <div style="font-size:10px; color:#64748b;">Applicables pour l'année 2026</div>
+                </div>
+
+                <p><strong>Mentions légales et coordonnées du vendeur :</strong><br>
+                Raison sociale : Centre National de Formation Canine Nikita – Association Marcel<br>
+                Nom commercial : déposé à l'INPI – Contenu des formations : déposé Copyright<br>
+                Siège social : 66 avenue des Champs-Élysées, 75008 Paris<br>
+                Contact : info.formationcanine@gmail.com – Téléphone : 07.54.48.01.02<br>
+                Directeur de la publication : Nikita VERBAERE<br>
+                SIRET : 838 710 499 00032<br>
+                Organisme de formation : déclaration d'activité enregistrée sous le numéro 11757563275 auprès du préfet de région d'Île-de-France</p>
+
+                <p><strong>Préambule :</strong> Les présentes conditions générales de vente sont conclues entre le Centre National de Formation Canine Nikita marque déposée à l'INPI et toute personne souhaitant procéder à un achat de formation canine par téléphone, internet, mail. En validant sa commande, le client déclare accepter sans réserve les termes de celle-ci ainsi que l'intégralité des présentes conditions générales de vente. À défaut de signature de ce document, les CGV s'appliquent de plein droit dès lors que le client a convenu d'une inscription et a réalisé son premier règlement. Les CGV sont modifiables à tout moment sans délai et sans préavis.</p>
+
+                <p><strong>Objet :</strong> Les présentes CGV visent à définir les relations contractuelles entre le Centre National de Formation Canine Nikita et l'acheteur ainsi que les conditions applicables à tout achat d'une formation canine. Elles prévaudront sur toutes autres conditions non expressément agréées.</p>
+
+                <p><strong>Caractéristiques des biens et services proposés :</strong> Les formations canines proposées sont celles présentées sur le site www.formationscanines.com. Le programme peut être modifié à tout moment. Les formations sont proposées dans la limite des places disponibles.</p>
+
+                <p><strong>Tarifs :</strong> Les prix sont exprimés en euros TTC. Le Centre se réserve la possibilité de modifier ses prix à tout moment ; les produits et services sont facturés sur la base des tarifs en vigueur au moment de la validation de la commande.</p>
+
+                <p><strong>Aire géographique :</strong> Les formations ont lieu en ligne pour la partie théorique et pratique canine sur la plateforme Teachizy, avec un espace de connexion personnel dédié à l'élève. Les stages sont recommandés, mais non obligatoires.</p>
+
+                <p><strong>Commandes :</strong> L'acheteur suit le processus de commande (identification, validation, paiement, confirmation). La confirmation de la commande et du premier règlement entraîne l'acceptation des présentes CGV. Le Centre transmet par courrier électronique la confirmation et l'accès à la plateforme dans un délai de 72 heures maximum.</p>
+
+                <p><strong>Acceptation du contrat :</strong> Le contrat est réputé pleinement accepté dès lors que le Client a effectué un paiement, même partiel, ou accédé à la plateforme de formation. La validation du paiement constitue une acceptation expresse et irrévocable des présentes CGV.</p>
+
+                <p><strong>Réservation – Tarif – Paiement :</strong> Le prix est exigible à la commande. L'inscription n'est validée qu'après réception du règlement (virement, carte bancaire, ou paiement en plusieurs fois via Floa Bank / Stripe). L'inscription définitive est validée dès le premier versement.</p>
+
+                <p><strong>Paiement en plusieurs fois :</strong> Options disponibles via Floa Bank et Stripe : 1 fois, 4 fois, 10 fois, 12 fois, 20 fois sans frais pour l'acheteur. Un crédit vous engage et doit être remboursé. Vérifiez vos capacités de remboursement avant de vous engager.</p>
+
+                <p><strong>Acompte :</strong> Les acomptes versés sont considérés comme non remboursables et seront perdus à titre définitif en cas d'annulation de la part du participant.</p>
+
+                <p><strong>Retard ou défaut de paiement :</strong> Tout retard ou défaut de paiement donnera lieu à une pénalité de retard au taux de 10 % par jour de retard. En cas d'impossibilité d'honorer l'échéancier ou de rejet de prélèvement sans nouvelle de l'élève sous 24 heures, le contrat sera annulé sans préavis, l'accès à la plateforme retiré, et les sommes déjà versées acquises définitivement. La totalité du prix de la formation reste due.</p>
+
+                <p><strong>Annulation et modification :</strong> Toute formation annulée ou abandonnée par l'élève est due et facturée en totalité. Aucun report ni remboursement. Toute absence sera perdue, non remboursée et non reportée.</p>
+
+                <p><strong>Modalités de paiement :</strong> Tout incident de paiement (y compris partiel) entraîne l'exigibilité immédiate de la totalité des sommes dues. Tout retard suspend l'accès à la plateforme. Les frais de recouvrement sont à la charge exclusive du Client. Toute décision unilatérale d'interrompre la formation ne suspend en aucun cas les obligations financières.</p>
+
+                <p><strong>Délai de rétractation :</strong> Conformément à l'article L221-18 du Code de la consommation, un délai légal de rétractation de 14 jours est applicable pour tout achat effectué à distance. Toute demande doit être adressée par écrit en recommandé avec AR dans ce délai, avant tout accès au contenu numérique. En cas d'accès à la plateforme, le Client perd expressément son droit à rétractation (article L221-28-13).</p>
+
+                <p><strong>Cadre des formations canines :</strong> Formations réparties entre cours théoriques et pratiques en ligne. Méthode basée sur la coopération du chien. Seuls les colliers plats sont acceptés. L'élève s'entraîne obligatoirement sur une peluche ; toute pratique sur un chien réel se fait sous la responsabilité exclusive de l'élève. La formation doit être étudiée au minimum 400 heures.</p>
+
+                <p><strong>Nature des obligations du Prestataire :</strong> Obligation de moyens. Les résultats restent liés à l'investissement de l'élève. Suivi assuré pendant 15 jours maximum après la fin de la formation. L'élève dispose de 12 mois maximum à partir de l'inscription pour réaliser sa formation ; au-delà, abandon considéré et retrait de la plateforme.</p>
+
+                <p><strong>Obligations de l'élève :</strong> Fournir toutes informations nécessaires (changement d'adresse, téléphone, email) sous 24 h. Le contrat envoyé doit être renvoyé signé sous 24 h avec la mention « bon pour accord ». Passé ce délai, abandon considéré. Toute absence de plus de 2 mois = abandon. Notes inférieures à 10/20 éliminatoires. Interdiction de tout matériel ou technique basée sur la douleur, l'intimidation ou la peur.</p>
+
+                <p><strong>Propriété intellectuelle :</strong> L'ensemble des contenus de formation (théorie, pratique, supports) est la propriété exclusive du Centre National de Formation Canine Nikita. Toute reproduction, partage, plagiat ou mise en vente est interdite et punie par la loi (jusqu'à 3 ans de prison et 300 000 € d'amende – art. L.335-2 du Code pénal).</p>
+
+                <p><strong>Photos et vidéos :</strong> L'élève autorise le Centre à photographier et/ou filmer lors de la formation et à utiliser son image sur les réseaux sociaux et internet.</p>
+
+                <p><strong>Assurance :</strong> Le Centre a souscrit une assurance responsabilité civile professionnelle et une protection juridique auprès d'AXA ASSURANCES.</p>
+
+                <p><strong>Clause d'engagement irrévocable :</strong> Tout engagement est ferme et définitif à l'issue du délai de rétractation. Aucun remboursement ou report ne sera accepté pour cessation volontaire, désintérêt, changement d'avis ou indisponibilité.</p>
+
+                <p><strong>Clause de pénalité pour défaut de paiement :</strong> En cas de non-paiement, indemnité forfaitaire de recouvrement de 199 € TTC + frais supplémentaires + intérêts de retard. Accès suspendu jusqu'à régularisation. La formation reste intégralement due.</p>
+
+                <p><strong>Accès à la formation :</strong> Personnel, incessible et non transférable. Durée d'accès : 12 mois à compter de l'activation des identifiants. Déblocage progressif des modules selon les paiements encaissés. Accès à la seconde partie conditionné au paiement intégral.</p>
+
+                <p><strong>Stages pratiques :</strong> Recommandés mais non obligatoires. Le Centre n'intervient pas dans la recherche de stages. L'apprenant doit souscrire une assurance RC. Le Centre ne saurait être tenu responsable d'un incident survenu pendant un stage.</p>
+
+                <p><strong>Accompagnement post-certification :</strong> Une séance unique de 30 minutes maximum par visioconférence dans les 15 jours suivant l'obtention de la certification. Non renouvelable, non reportable.</p>
+
+                <p><strong>Respect du cadre relationnel :</strong> Tout comportement agressif, irrespectueux, menaçant ou diffamatoire pourra entraîner la cessation de communication, la suspension ou résiliation sans remboursement, et le dépôt de plainte.</p>
+
+                <p><strong>Clause de force majeure :</strong> Le Centre ne pourra être tenu responsable en cas de force majeure (catastrophes naturelles, pandémies, cyberattaques, etc.).</p>
+
+                <p><strong>Règlement des litiges :</strong> Loi française. Tribunaux français seuls compétents. Médiation de la consommation possible auprès de CM2C – 49 rue de Ponthieu, 75008 Paris (www.cm2c.net).</p>
+
+                <p style="margin-top:20px; font-size:10px; color:#64748b; text-align:center; border-top:1px solid #e2e8f0; padding-top:10px;">
+                    Centre National de Formation Canine Nikita® – 66 Avenue des Champs-Élysées, 75008 Paris<br>
+                    SIRET 83871049900032 – Déclaration d'activité n° 11757563275<br>
+                    Tél. 07 54 48 01 02 – info.formationcanine@gmail.com – www.formationscanines.com
+                </p>
+            </div>`;
+        }
+
+        function downloadPDFById(id) {
+            const contract = getSavedContracts().find(c => c.id === id);
+            if (!contract) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.width = '100%';
+
+            // 1. Contrat
+            const contractDiv = document.createElement('div');
+            contractDiv.className = "document-paper";
+            contractDiv.style.boxShadow = 'none';
+            contractDiv.style.padding = '20px 30px';
+            contractDiv.innerHTML = contract.htmlContent;
+
+            // S'assurer que la signature org est visible
+            const orgSig = localStorage.getItem(STORAGE_KEY_ORG_SIG);
+            if (orgSig) {
+                const img = contractDiv.querySelector('#docSigOrgImg');
+                if (img) { img.src = orgSig; img.style.display = 'block'; }
+            }
+
+            // 2. CGV complètes
+            const cgvDiv = document.createElement('div');
+            cgvDiv.innerHTML = getFullCGVHtml();
+
+            wrapper.appendChild(contractDiv);
+            wrapper.appendChild(cgvDiv);
+
+            const opt = {
+                margin: 8,
+                filename: `${contract.number}_${contract.stagiaire.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.97 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            html2pdf().set(opt).from(wrapper).save();
+        }
+
+        function exportDataJSON() {
+            const data = {
+                company: localStorage.getItem(STORAGE_KEY_COMPANY),
+                contracts: localStorage.getItem(STORAGE_KEY_CONTRACTS)
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cnfcn_nikita_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function importDataJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (parsed.company) localStorage.setItem(STORAGE_KEY_COMPANY, parsed.company);
+                    if (parsed.contracts) localStorage.setItem(STORAGE_KEY_CONTRACTS, parsed.contracts);
+                    alert("Données restaurées.");
+                    location.reload();
+                } catch (err) { alert("Fichier JSON invalide."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==================== SIGNING (stagiaire) ====================
+        function initSigningCanvas() {
+            // Attendre que le layout soit visible pour un bon resize
+            setTimeout(() => {
+                signingPad = createSignaturePad('signingCanvas');
+            }, 80);
+        }
+
+        function clearSigningCanvas() {
+            if (signingPad) signingPad.clear();
+        }
+
+        async function loadContractForSigning(token) {
+            document.querySelector('.sidebar').style.display = 'none';
+            document.querySelector('.top-navbar').style.display = 'none';
+            document.querySelector('.app-container').style.display = 'block';
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('signingView').classList.add('active');
+            document.getElementById('pageTitle').innerText = 'Signature du contrat';
+
+            // Cherche d’abord en local
+            let contract = getSavedContracts().find(c => c.signingToken === token);
+            if (!contract && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('contracts').select('*').eq('signing_token', token).single();
+                    if (!error && data) {
+                        contract = {
+                            number: data.number,
+                            stagiaire: data.stagiaire || data.stagiaire_name,
+                            status: data.status,
+                            htmlContent: data.html_content,
+                            signingToken: data.signing_token
+                        };
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            if (!contract) {
+                showSigningStatus("Contrat introuvable ou lien invalide.", "error");
+                document.getElementById('signingActionBox').style.display = 'none';
+                return;
+            }
+
+            currentSigningContract = contract;
+            document.getElementById('signingContractInfo').innerHTML = `
+                <strong>N° Contrat :</strong> ${contract.number}<br>
+                <strong>Stagiaire :</strong> ${contract.stagiaire}<br>
+                <strong>Statut :</strong> <span class="badge ${contract.status === 'Signé' ? 'badge-signed' : 'badge-pending'}">${contract.status}</span>
+            `;
+            document.getElementById('signingContractPaper').innerHTML = contract.htmlContent || '<p>Contenu non disponible.</p>';
+
+            if (contract.status === 'Signé') {
+                showSigningStatus("✅ Ce contrat a déjà été signé.", "success");
+                document.getElementById('signingActionBox').style.display = 'none';
+            }
+        }
+
+        function showSigningStatus(message, type) {
+            const el = document.getElementById('signingStatus');
+            el.style.display = 'block';
+            el.innerText = message;
+            el.style.background = type === 'success' ? '#d1fae5' : type === 'error' ? '#fef2f2' : '#fef3c7';
+            el.style.color = type === 'success' ? '#065f46' : type === 'error' ? '#991b1b' : '#92400e';
+        }
+
+        function showSignTab(tab) {
+            const contrat = document.getElementById('signingContractPaper');
+            const cgv = document.getElementById('signingCgvPaper');
+            const btnC = document.getElementById('signTabContrat');
+            const btnG = document.getElementById('signTabCgv');
+            if (tab === 'cgv') {
+                contrat.style.display = 'none';
+                cgv.style.display = 'block';
+                if (!cgv.dataset.loaded) {
+                    cgv.innerHTML = getFullCGVHtml().replace('page-break-before: always;', '');
+                    cgv.dataset.loaded = '1';
+                }
+                btnC.className = 'btn btn-sm btn-secondary';
+                btnG.className = 'btn btn-sm';
+                btnG.style.background = 'var(--accent)';
+                btnG.style.color = '#1e3a5f';
+                btnG.style.border = 'none';
+            } else {
+                contrat.style.display = 'block';
+                cgv.style.display = 'none';
+                btnG.className = 'btn btn-sm btn-secondary';
+                btnC.className = 'btn btn-sm';
+                btnC.style.background = 'var(--accent)';
+                btnC.style.color = '#1e3a5f';
+                btnC.style.border = 'none';
+            }
+        }
+
+        async function confirmRecipientSignature() {
+            if (!currentSigningContract) { alert("Aucun contrat chargé."); return; }
+            if (!signingPad || signingPad.isEmpty()) {
+                alert("Veuillez dessiner votre signature avant de valider.");
+                return;
+            }
+            const signatureData = signingPad.toDataURL();
+            const signedAt = new Date().toLocaleString('fr-FR');
+            const btn = document.getElementById('btnConfirmSign');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traitement...';
+
+            // Mise à jour locale
+            let contracts = getSavedContracts();
+            const idx = contracts.findIndex(c => c.signingToken === currentSigningContract.signingToken);
+            if (idx >= 0) {
+                contracts[idx].status = "Signé";
+                contracts[idx].signature = signatureData;
+                contracts[idx].signedAt = signedAt;
+                // Mettre à jour le HTML avec la signature + horodatage
+                const temp = document.createElement('div');
+                temp.innerHTML = contracts[idx].htmlContent;
+                const img = temp.querySelector('#docSigStagImg');
+                if (img) {
+                    img.src = signatureData;
+                    img.style.display = 'block';
+                }
+                // Ajouter la date de signature sous la case
+                const stagBox = temp.querySelectorAll('.signature-box')[1];
+                if (stagBox && !stagBox.querySelector('.sig-date')) {
+                    const dateEl = document.createElement('p');
+                    dateEl.className = 'sig-date';
+                    dateEl.style.cssText = 'font-size:10px;color:#64748b;margin-top:4px;';
+                    dateEl.innerText = 'Signé le ' + signedAt;
+                    stagBox.appendChild(dateEl);
+                }
+                contracts[idx].htmlContent = temp.innerHTML;
+                localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(contracts));
+            }
+
+            // Mise à jour Supabase
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('contracts').update({
+                        status: 'Signé',
+                        stagiaire_signature: signatureData,
+                        signed_at: new Date().toISOString()
+                    }).eq('signing_token', currentSigningContract.signingToken);
+                } catch (e) { console.warn(e); }
+            }
+
+            // Afficher la signature dans l’aperçu
+            const paper = document.getElementById('signingContractPaper');
+            const sigImg = paper.querySelector('#docSigStagImg');
+            if (sigImg) { sigImg.src = signatureData; sigImg.style.display = 'block'; }
+
+            showSigningStatus("✅ Contrat signé avec succès le " + signedAt + " ! Merci.", "success");
+            document.getElementById('signingActionBox').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
